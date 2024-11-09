@@ -39,4 +39,14 @@ class Yolov8_obb():
             bboxs_per_category.append(n)
         return bboxs_per_category
     
+    def delete_labels_missing_images(self):
+        n=0
+        for category in self.categories:
+            for filename in os.listdir(os.path.join(self.folder_path, category, "labels")):
+                image_filename = os.path.splitext(filename)[0] + ".jpg"
+                if image_filename not in os.listdir(os.path.join(self.folder_path, category, "images")):
+                    os.remove(os.path.join(self.folder_path, category, "labels", filename))
+                    n+=1
+        print("successfully deleted",n,"labels")
+    
     
