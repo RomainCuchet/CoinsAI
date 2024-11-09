@@ -1,8 +1,7 @@
 venv/
-baht**dataset**
 models/
 yolov8n.pt
 **pycache**/
 report_images/
-past_datasets/
 tmp.py
+datasets/
