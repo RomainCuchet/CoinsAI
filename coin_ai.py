@@ -66,9 +66,12 @@ class CoinAi(YoloModel):
             
         return coin_results
     
-    def get_results_img(self, coin_results, display_circles=False,display_conf=True,save=False,file_name="results.png"):
+    def get_results_img(self, coin_results, display_boxes = True, display_circles=False,display_conf=True,save=False,file_name="results.png"):
         save_folder="outputs"
-        img_result = super().get_results_img([coin_results.results],display_conf)[0]
+        if display_boxes : 
+            img_result = super().get_results_img([coin_results.results],display_conf)[0]
+        else:
+            img_result = cv2.imread(coin_results.results.path)
         if display_circles:
             for circle in coin_results.circles:
                 if circle is not None:
