@@ -5,3 +5,8 @@ yolov8n.pt
 report_images/
 tmp.py
 datasets/
+tests_img
+notes.txt
+background/
+outputs/
+past_datasets/
