@@ -5,8 +5,9 @@ yolov8n.pt
 report_images/
 tmp.py
 datasets/
-outputs/
-background/
-notes.txt
 tests_img
+notes.txt
+background/
+outputs/
+past_datasets/
 copy.ipynb
