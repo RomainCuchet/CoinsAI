@@ -49,7 +49,7 @@ class CirclesDetector:
         
         return best_circle
 
-    def get_best_circles(results:Results,threshold_percent=90) -> list[CircleInfo|None]:
+    def get_best_circles(results:Results,threshold_percent=95) -> list[CircleInfo|None]:
         """
         Extracts the best circle (if exists) from each bbox in yolo_results.
         Args:
@@ -110,6 +110,6 @@ class CirclesDetector:
                     )
                     best_circles.append(circle_info)
                 else:
-                    best_circles.append(best_circles)
+                    best_circles.append(None)
 
         return best_circles
