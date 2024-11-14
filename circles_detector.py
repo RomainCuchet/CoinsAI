@@ -25,7 +25,7 @@ class CirclesDetector:
         percentage_inside = (pixels_inside / total_circle_pixels) * 100
         return percentage_inside
 
-    def __find_best_circle(circles, bbox_w, bbox_h, threshold_percentage_inside):
+    def __find_best_circle(circles, bbox_w, bbox_h, inside_min_percentage):
         """
         Find the largest circle that meets the threshold requirement
         Returns: tuple (circle_x, circle_y, radius, percentage) or None if no valid circles
@@ -43,19 +43,19 @@ class CirclesDetector:
                 bbox_w, bbox_h
             )
             
-            if percentage_inside >= threshold_percentage_inside and radius > max_radius:
+            if percentage_inside >= inside_min_percentage and radius > max_radius:
                 max_radius = radius
                 best_circle = (circle_x, circle_y, radius, percentage_inside)
         
         return best_circle
 
-    def get_best_circles(results:Results,threshold_percent=95) -> list[CircleInfo|None]:
+    def get_best_circles(results:Results,inside_min_percentage=95) -> list[CircleInfo|None]:
         """
         Extracts the best circle (if exists) from each bbox in yolo_results.
         Args:
             model: YOLO model
             path: Path to image
-            threshold_percent: Minimum percentage of circle that must be inside bbox
+            inside_min_percent: Minimum percentage of circle that must be inside bbox
             display: Whether to display results
         Returns:
             List of CircleInfo objects containing detected circles information. None instead of CircleInfo if no circle detected.
@@ -95,7 +95,7 @@ class CirclesDetector:
                     maxRadius=int(max(w, h) * 0.6)
                 )
 
-                best_circle = CirclesDetector.__find_best_circle(circles, x2-x1, y2-y1, threshold_percent)
+                best_circle = CirclesDetector.__find_best_circle(circles, x2-x1, y2-y1, inside_min_percentage)
                 
                 if best_circle:
                     circle_x, circle_y, radius, percentage = best_circle

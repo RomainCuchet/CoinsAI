@@ -87,12 +87,12 @@ class CoinAi(YoloModel):
         return None
         
     
-    def process_image(self,path:str,circle_detection_improvment=True,conf=0.6,iou=0.45,agnostic_nms=True)->CoinResults:
+    def process_image(self,path:str,circle_detection_improvment=True,conf=0.6,iou=0.45,agnostic_nms=True,inside_min_percentage_circle = 0.95)->CoinResults:
         results = self.filter_results(self.predict(path,conf=conf,iou=iou,agnostic_nms=agnostic_nms),conf=conf)[0] # one image so only one results object in n_results
         coin_results = CoinResults(results,nb_coins=len(results.boxes))
         print("coin detected: ",coin_results.nb_coins)
         if circle_detection_improvment:
-            coin_results = CoinAi.radius_scale_improvement(coin_results)
+            coin_results = CoinAi.radius_scale_improvement(coin_results,inside_min_percentage_circle=inside_min_percentage_circle)
             
         return coin_results
     
@@ -112,13 +112,13 @@ class CoinAi(YoloModel):
             cv2.imwrite(os.path.join(save_folder,file_name),img_result)
         return img_result
     
-    def radius_scale_improvement(coin_results):
+    def radius_scale_improvement(coin_results,inside_min_percentage_circle):
         
         n_changed_cls = 0
         # relative_deviation 10baht vs 1baht coins : (26-20)/20 = 0.23 can be adjusted because we have mesurement in px and there is distortion
         relative_acc_mm = 1.5
         coin_results.results.boxes.sort(key=lambda box: (box.cls,box.xywh[0,2] * box.xywh[0,3])) # sort by class
-        coin_results.circles = CirclesDetector.get_best_circles(coin_results.results)
+        coin_results.circles = CirclesDetector.get_best_circles(coin_results.results,inside_min_percentage=inside_min_percentage_circle)
         for i in range(coin_results.nb_coins):
             if coin_results.circles[i] is not None:
                 coin_results.detected_circles += 1
