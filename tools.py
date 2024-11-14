@@ -195,3 +195,44 @@ class Tools():
         # Format for YOLOv8 OBB
         obb_line = f"{class_id} {x1:.6f} {y1:.6f} {x2:.6f} {y2:.6f} {x3:.6f} {y3:.6f} {x4:.6f} {y4:.6f}\n"
         return obb_line
+    
+    def plot_processing_times_from_file(file_path):
+        preprocess_times = []
+        inference_times = []
+        postprocess_times = []
+
+        # Open and read the file
+        with open(file_path, 'r') as file:
+            for line in file:
+                if 'Speed:' in line:
+                    # Extract times from the line
+                    parts = line.split('Speed:')[1].split(',')
+                    preprocess_time = float(parts[0].split()[0].replace('ms', ''))
+                    inference_time = float(parts[1].split()[0].replace('ms', ''))
+                    postprocess_time = float(parts[2].split()[0].replace('ms', ''))
+
+                    # Append the times to their respective lists
+                    preprocess_times.append(preprocess_time)
+                    inference_times.append(inference_time)
+                    postprocess_times.append(postprocess_time)
+
+        # Plotting the times
+        x = range(1, len(preprocess_times) + 1)
+        
+        plt.pyplot.figure(figsize=(10, 6))
+        
+        # Create a line plot for each type of time
+        plt.pyplot.plot(x, preprocess_times, label='Preprocess', marker='o')
+        plt.pyplot.plot(x, inference_times, label='Inference', marker='o')
+        plt.pyplot.plot(x, postprocess_times, label='Postprocess', marker='o')
+        
+        # Adding labels and title
+        plt.pyplot.xlabel('Test Case') 
+        plt.pyplot.ylabel('Time (ms)')
+        plt.pyplot.title('Processing Times per Image')
+        plt.pyplot.legend()
+        
+        # Show the plot
+        # Save the plot as a PNG file
+        plt.pyplot.savefig('output.png', format='png')
+        plt.pyplot.show()
