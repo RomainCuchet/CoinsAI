@@ -4,7 +4,6 @@ import cv2
 import numpy as np
 import os
 import torch
-
 import cv2
 import os
 import tempfile
@@ -16,9 +15,6 @@ from dataclasses import dataclass
 from typing import Tuple
 
 from circles_detector import CirclesDetector,CircleInfo
-
-
-model = YOLO("models/yolo8nW.pt")
 
 class YoloModel(YOLO):
         
@@ -58,13 +54,13 @@ class CoinResults:
             
 class CoinAi(YoloModel):
     
-    def get_pixel_to_mm_ratio(coin_results:CoinResults,indexs_dict:dict):
+    def get_pixel_to_mm_ratio(coin_results:CoinResults,indexs_dict:dict,ref_5baht)->float:
         # ['10baht', '1baht', '2baht', '5baht'] in data.yaml
         def get_best_coin_radius(first_index:int,last_index:int):
             radius = None
             left = (first_index+last_index)//2
             right = left+1
-            while right<coin_results.nb_coins:
+            while right<last_index:
                 if coin_results.circles[left]:
                     return coin_results.circles[left].radius
                 if coin_results.circles[right]:
@@ -76,28 +72,26 @@ class CoinAi(YoloModel):
                     radius = coin_results.circles[left].radius
             return radius
 
-        if indexs_dict[0] != (-1,-1): # 10baht reference coin
+        if indexs_dict[0] != [-1,-1]: # 10baht reference coin
             radius = get_best_coin_radius(indexs_dict[0][0],indexs_dict[0][1])
             if radius:
                 return 13 / radius
-        elif indexs_dict[3] != (-1,-1): # 5baht reference coin
-            radius = get_best_coin_radius(indexs_dict[3][0],indexs_dict[3][1])
-            if radius:
-                return 12 / radius
+        if ref_5baht and indexs_dict[3] != [-1,-1]: # 5baht reference coin (if activated)
+            for i in range(indexs_dict[3][1],indexs_dict[3][0]-1,-1):
+                if coin_results.circles[i]:
+                    return 12 / coin_results.circles[i].radius
         return None
         
     
-    def process_image(self,path:str,circle_detection_improvment=True,conf=0.6,iou=0.45,agnostic_nms=True,inside_min_percentage_circle = 0.95)->CoinResults:
+    def process_image(self,path:str,circle_detection_improvment=True,conf=0.6,iou=0.45,agnostic_nms=True,inside_min_percentage_circle = 0.95,ref_5baht=True)->CoinResults:
         results = self.filter_results(self.predict(path,conf=conf,iou=iou,agnostic_nms=agnostic_nms),conf=conf)[0] # one image so only one results object in n_results
         coin_results = CoinResults(results,nb_coins=len(results.boxes))
         print("coin detected: ",coin_results.nb_coins)
         if circle_detection_improvment:
-            coin_results = CoinAi.radius_scale_improvement(coin_results,inside_min_percentage_circle=inside_min_percentage_circle)
-            
+            coin_results = CoinAi.radius_scale_improvement(coin_results,inside_min_percentage_circle=inside_min_percentage_circle,ref_5baht=ref_5baht)
         return coin_results
     
-    def get_results_img(self, coin_results, display_boxes = True, display_circles=False,display_conf=True,save=False,file_name="results.png"):
-        save_folder="outputs"
+    def get_results_img(self, coin_results, display_boxes = True, display_circles=False,display_conf=True,save=False,file_name="results.png",save_folder="outputs"):
         if display_boxes : 
             img_result = super().get_results_img([coin_results.results],display_conf)[0]
         else:
@@ -109,14 +103,14 @@ class CoinAi(YoloModel):
         if save and not os.path.exists(save_folder):
             os.makedirs(save_folder)
         if save:
-            cv2.imwrite(os.path.join(save_folder,file_name),img_result)
+            cv2.imwrite(f"{os.path.join(save_folder,file_name)}.jpg",img_result)
         return img_result
     
-    def radius_scale_improvement(coin_results,inside_min_percentage_circle):
+    def radius_scale_improvement(coin_results,inside_min_percentage_circle,ref_5baht):
         
         n_changed_cls = 0
         # relative_deviation 10baht vs 1baht coins : (26-20)/20 = 0.23 can be adjusted because we have mesurement in px and there is distortion
-        relative_acc_mm = 1.5
+        delta_mm = 1.5
         coin_results.results.boxes.sort(key=lambda box: (box.cls,box.xywh[0,2] * box.xywh[0,3])) # sort by class
         coin_results.circles = CirclesDetector.get_best_circles(coin_results.results,inside_min_percentage=inside_min_percentage_circle)
         for i in range(coin_results.nb_coins):
@@ -138,24 +132,32 @@ class CoinAi(YoloModel):
                 indexs_dict[c_class] = [i,i]
             else:
                 indexs_dict[c_class][1] = i
-        pixel_to_milimeter_ratio = CoinAi.get_pixel_to_mm_ratio(coin_results,indexs_dict)
+        pixel_to_milimeter_ratio = CoinAi.get_pixel_to_mm_ratio(coin_results,indexs_dict,ref_5baht)
         if not pixel_to_milimeter_ratio:
             s = "Couldn't improve Yolo results with radius scale :"
-            if indexs_dict[0] == (-1,-1) and indexs_dict[3] == (-1,-1):
-                print(s, "no reference coin detected (10baht|5baht)")
+            if indexs_dict[0] == [-1,-1] and indexs_dict[3] == [-1,-1]:
+                print(s, "no reference coin detected (10baht|5baht if ref_5baht=True)")
             else:
-                print(s,"no circle detected in any reference coin (10baht|5baht) bounding box")
+                print(s,"no circle detected in any reference coin (10baht|5baht if ref_5baht=True) bounding box")
             return coin_results
         boxes = coin_results.results.boxes
         for i in range(indexs_dict[1][0],indexs_dict[1][1]+1):
             # radius 1 baht coin = 10mm 
-            if coin_results.circles[i] is not None and coin_results.circles[i].radius*pixel_to_milimeter_ratio > 10+relative_acc_mm:
+            if coin_results.circles[i] is not None and coin_results.circles[i].radius*pixel_to_milimeter_ratio > 10+delta_mm:
                 # Clone the data tensor to make modifications
                 box_data = boxes[i].data.clone()
                 # Modify the class label in the cloned tensor
                 box_data[0, 5] = torch.tensor(3)
                 boxes[i].data = box_data  # Update the data in the boxes list
                 n_changed_cls += 1
+        if ref_5baht:
+            for i in range(indexs_dict[3][0],indexs_dict[3][1]+1):
+                if coin_results.circles[i] is not None and coin_results.circles[i].radius*pixel_to_milimeter_ratio < 10+delta_mm:
+                    box_data = boxes[i].data.clone()
+                    # Modify the class label in the cloned tensor
+                    box_data[0, 5] = torch.tensor(1)
+                    boxes[i].data = box_data  # Update the data in the boxes list
+                    n_changed_cls += 1
         coin_results.results.boxes = boxes
             
         print("Labels changed by radius scale improvement: ",n_changed_cls)
