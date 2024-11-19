@@ -1,54 +1,84 @@
 import math
+import numpy as np
 from heapq import heappop, heappush
 from ultralytics.engine.results import Results
 
 class PathFinder:
-    def __init__(self, results:Results, start, end):
+    def __init__(self, results: Results, start, end, object_width=1):
         """
-        Initialize the GAA* Search Algorithm with pixel-level data.
-        
+        Initialize the A* Search Algorithm with pixel-level data.
+
         :param results: Ultralytics Results object containing detected bounding boxes.
         :param start: Start coordinates (x, y) in pixels.
         :param end: End coordinates (x, y) in pixels.
+        :param object_width: Width of the moving object in pixels (radius).
         """
         self.results = results
         self.start = start
         self.end = end
+        self.object_width = object_width  # Radius of the moving object
         self.image_height = results.orig_img.shape[0]
         self.image_width = results.orig_img.shape[1]
+        
         if self.__invalid_coordinates():
             raise ValueError(
                 "Start or end coordinates are out of image bounds. "
-                "([0,image.width-1];[0,image.height-1]). For this image the accepted range is : "
-                f"([0,{self.image_width-1}];[0,{self.image_height-1}])"
+                f"([0,{self.image_width-1}];[0,{self.image_height-1}])."
             )
-        self.obstacles = self.__extract_obstacles()
-        self.inflated_heuristic = {}  # Dynamically updated heuristic estimates
         
+        # Create grid with 1 for obstacles and 0 for free space
+        self.grid = np.zeros((self.image_height, self.image_width), dtype=int)
+        self.visited = np.zeros_like(self.grid, dtype=bool)
+        
+        # Extract and inflate obstacles
+        self.__extract_obstacles()
+        if object_width > 1:
+            self.__inflate_obstacles()
+
     def __invalid_coordinates(self):
-        return (self.start[0] >= self.image_width or self.start[1] >= self.image_height or
-            self.end[0] >= self.image_width or self.end[1] >= self.image_height or
-            self.start[0] < 0 or self.start[1] < 0 or self.end[0] < 0 or self.end[1] < 0)
-            
+        return not (0 <= self.start[0] < self.image_width and 0 <= self.start[1] < self.image_height and
+                    0 <= self.end[0] < self.image_width and 0 <= self.end[1] < self.image_height)
 
     def __extract_obstacles(self):
         """
-        Create a set of all pixel positions that are marked as obstacles.
+        Extract bounding box obstacles as a 2D grid mask.
         """
-        obstacles = set()
         for bbox in self.results.boxes:
             x1, y1, x2, y2 = map(int, bbox.xyxy.tolist()[0])
-            for x in range(x1, x2 + 1):
-                for y in range(y1, y2 + 1):
-                    obstacles.add((x, y))
-        return obstacles
+            self.grid[y1:y2, x1:x2] = 1  # Mark obstacle areas as 1 (obstacle)
+
+    def __inflate_obstacles(self):
+        """
+        Inflate the obstacles by the radius of the moving object using NumPy.
+        """
+        for bbox in self.results.boxes:
+            x1, y1, x2, y2 = map(int, bbox.xyxy.tolist()[0])
+            inflated_x1 = max(0, x1 - self.object_width)
+            inflated_y1 = max(0, y1 - self.object_width)
+            inflated_x2 = min(self.image_width - 1, x2 + self.object_width)
+            inflated_y2 = min(self.image_height - 1, y2 + self.object_width)
+            
+            self.grid[inflated_y1:inflated_y2, inflated_x1:inflated_x2] = 1  # Mark inflated obstacle areas
+
+    def __is_valid_position(self, x, y):
+        """
+        Check if a position is valid (within bounds and not inside an inflated obstacle).
+        """
+        if not (0 <= x < self.image_width and 0 <= y < self.image_height):
+            return False  # Out of bounds
+
+        if self.grid[y, x] == 1:  # Check if the cell is an obstacle (value 1)
+            return False  # The point is inside an obstacle
+
+        if self.visited[y, x]:
+            return False  # Already visited
+
+        return True
 
     def __heuristic(self, node, goal):
         """
-        Calculate the dynamic heuristic for A*.
+        Calculate the Euclidean distance heuristic for A*.
         """
-        if node in self.inflated_heuristic:
-            return self.inflated_heuristic[node]
         return math.sqrt((node[0] - goal[0]) ** 2 + (node[1] - goal[1]) ** 2)
 
     def a_star(self):
@@ -72,19 +102,18 @@ class PathFinder:
             neighbors = [
                 (current[0] + dx, current[1] + dy)
                 for dx, dy in [(-1, 0), (1, 0), (0, -1), (0, 1),
-                            (-1, -1), (-1, 1), (1, -1), (1, 1)]
+                               (-1, -1), (-1, 1), (1, -1), (1, 1)]
             ]
 
             for neighbor in neighbors:
-                if not (0 <= neighbor[0] < self.image_width and 0 <= neighbor[1] < self.image_height):
-                    continue  # Out of bounds
-                if neighbor in self.obstacles:
-                    continue  # Is an obstacle
-                
-                # Check for valid diagonal moves
-                if abs(neighbor[0] - current[0]) == 1 and abs(neighbor[1] - current[1]) == 1:
-                    if ((current[0], neighbor[1]) in self.obstacles or
-                        (neighbor[0], current[1]) in self.obstacles):
+                nx, ny = neighbor
+                if not self.__is_valid_position(nx, ny):
+                    continue  # Out of bounds or in an inflated obstacle
+
+                # Check diagonal movement validity
+                if abs(nx - current[0]) == 1 and abs(ny - current[1]) == 1:
+                    if not (self.__is_valid_position(current[0], ny) and
+                            self.__is_valid_position(nx, current[1])):
                         continue
 
                 tentative_g_cost = g_costs[current] + math.sqrt(
@@ -103,37 +132,3 @@ class PathFinder:
         Return the path from start to end in pixel coordinates.
         """
         return self.a_star()
-
-# Example usage
-# if __name__ == "__main__":
-#     from coin_ai import CoinAi
-#     import cv2
-#     import numpy as np
-#     image_path="tests_img/test2.png"
-#     coiny = CoinAi("models/yolov8s_coinai_prod.pt")
-#     results = coiny.process_image(image_path).results
-#     start = (0, 0)
-#     end = (1599, 1200)
-#     gaas = PathFinder(results, start, end)
-#     path = gaas.get_path()
-#     # Draw the path on the image
-#     image = results.orig_img.copy()
-#     for (x, y) in path:
-#         cv2.circle(image, (x, y), 2, (0, 255, 0), -1)
-#     # Draw the start point in green
-#     cv2.circle(image, start, 5, (0, 255, 0), -1)
-    
-#     # Draw the end point in red
-#     cv2.circle(image, end, 5, (0, 0, 255), -1)
-    
-#     # Draw the obstacles in blue
-#     for (x, y) in gaas.obstacles:
-#         cv2.circle(image, (x, y), 2, (255, 0, 0), -1)
-#     # Save the image with the path
-#     output_path = "path_with_path.png"
-#     cv2.imwrite(output_path, image)
-
-#     # Display the image with the path
-#     cv2.imshow("Path", image)
-#     cv2.waitKey(0)
-#     cv2.destroyAllWindows()

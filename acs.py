@@ -2,12 +2,17 @@ from coin_ai import CoinAi
 import cv2
 from path_finding import PathFinder
 from coin_ai import CoinAi, CoinResults
+import time
+import logging
+# Configure logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s', filename='acs.log', filemode='a')
+logger = logging.getLogger(__name__)
 
 class Acs(): # Anti Collision System
     def __init__(self, model_path):
        self.coin_ai = CoinAi(model_path)
        
-    def get_prediction(self,image_path,start : tuple,end : tuple):
+    def get_prediction(self,image_path,start : tuple,end : tuple,robot_width=1):
         """
         Processes an image to detect coins, finds a path between two points, and saves the result image with the path.
         Args:
@@ -23,8 +28,10 @@ class Acs(): # Anti Collision System
                 - reclassification_pp (float): The number of bbox reclassified by post-processing.
         """
         coin_results : CoinResults = self.coin_ai.process_image(image_path)
-        path_finder = PathFinder(coin_results.results, start, end)
+        path_finder = PathFinder(coin_results.results, start, end,robot_width)
+        time_ = time.time()
         path = path_finder.get_path()
+        logger.info(f"time to find the path : {time.time()-time_}s with robot_width : {robot_width}")
         results_img = self.coin_ai.get_results_img(coin_results=coin_results)
         
         
