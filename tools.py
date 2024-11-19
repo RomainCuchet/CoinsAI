@@ -363,6 +363,10 @@ class Tools():
 
         # Run the Tkinter main loop
         root.mainloop()
+        
+        
+    def show_img(img_path):
+        os.startfile(img_path)
 
 
 

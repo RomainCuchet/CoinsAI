@@ -2,17 +2,13 @@ from coin_ai import CoinAi
 import cv2
 from path_finding import PathFinder
 from coin_ai import CoinAi, CoinResults
-import time
-import logging
-# Configure logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s', filename='acs.log', filemode='a')
-logger = logging.getLogger(__name__)
 
 class Acs(): # Anti Collision System
-    def __init__(self, model_path):
+    def __init__(self, model_path, img_saving_path="processed_image.png"):
        self.coin_ai = CoinAi(model_path)
+       self.img_saving_path = img_saving_path
        
-    def get_prediction(self,image_path,start : tuple,end : tuple,robot_width=1):
+    def get_prediction(self,image_path,start : tuple,end : tuple,robot_width=1,img_saving_path=None):
         """
         Processes an image to detect coins, finds a path between two points, and saves the result image with the path.
         Args:
@@ -29,9 +25,7 @@ class Acs(): # Anti Collision System
         """
         coin_results : CoinResults = self.coin_ai.process_image(image_path)
         path_finder = PathFinder(coin_results.results, start, end,robot_width)
-        time_ = time.time()
         path = path_finder.get_path()
-        logger.info(f"time to find the path : {time.time()-time_}s with robot_width : {robot_width}")
         results_img = self.coin_ai.get_results_img(coin_results=coin_results)
         
         
@@ -39,9 +33,19 @@ class Acs(): # Anti Collision System
         cv2.circle(results_img, end, 5, (0, 0, 255), -1) # Draw the end point in red
         for (x, y) in path:
             cv2.circle(results_img, (x, y), 2, (0, 255, 0), -1)
+
+        text = f"Value: {coin_results.value}; Coins: {coin_results.nb_coins}; Circles: {coin_results.detected_circles} ; Reclassified: {coin_results.reclassification_pp}"
+        font = cv2.FONT_HERSHEY_SIMPLEX
+        bottom_left_corner = (10, results_img.shape[0] - 10)
+        font_scale = 1
+        font_color = (0, 0, 255)
+        line_type = 1
+        thickness = 2
+        cv2.putText(results_img, text, bottom_left_corner, font, font_scale, font_color, thickness, line_type)
         
-        # Save the image with the path
-        output_path = "path_with_path.png"
-        cv2.imwrite(output_path, results_img)
+        if not img_saving_path:
+            img_saving_path = self.img_saving_path
+            
+        cv2.imwrite(img_saving_path, results_img)
         
-        return output_path, coin_results.nb_coins,coin_results.detected_circles,coin_results.value,coin_results.reclassification_pp
+        return img_saving_path, coin_results.nb_coins,coin_results.detected_circles,coin_results.value,coin_results.reclassification_pp
