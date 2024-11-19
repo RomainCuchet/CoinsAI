@@ -5,6 +5,9 @@ import os
 import random
 import shutil
 from PIL import Image
+import tkinter as tk
+from tkinter import ttk
+from PIL import Image, ImageTk
 
 class Tools():
     def display_image_with_bboxes(image_path, label_path):
@@ -236,3 +239,130 @@ class Tools():
         # Save the plot as a PNG file
         plt.pyplot.savefig('output.png', format='png')
         plt.pyplot.show()
+        
+    def show_results_tkinter(image_path, nb_coins=None, nb_circles=None, value=None, reclassified_pp=None):
+        """
+        Display the results image in a zoomable and scrollable Tkinter window with four read-only fields for displaying values.
+        :param image_path: The path to the image file.
+        :param value1: First value to display (optional).
+        :param value2: Second value to display (optional).
+        :param value3: Third value to display (optional).
+        :param value4: Fourth value to display (optional).
+        """
+        # Read the image from the file path
+        image = cv2.imread(image_path)
+        if image is None:
+            raise ValueError(f"Unable to read the image from the provided path: {image_path}")
+
+        # Convert the image to RGB format for PIL
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        pil_image = Image.fromarray(image)
+
+        # Create the main Tkinter window
+        root = tk.Tk()
+        root.title("ACS Results Viewer")
+
+        # Add a frame for scrollbars
+        frame = ttk.Frame(root)
+        frame.pack(fill=tk.BOTH, expand=True)
+
+        # Create canvas and scrollbars
+        canvas = tk.Canvas(frame, bg="gray")
+        h_scroll = ttk.Scrollbar(frame, orient=tk.HORIZONTAL, command=canvas.xview)
+        v_scroll = ttk.Scrollbar(frame, orient=tk.VERTICAL, command=canvas.yview)
+        canvas.configure(xscrollcommand=h_scroll.set, yscrollcommand=v_scroll.set)
+
+        h_scroll.pack(side=tk.BOTTOM, fill=tk.X)
+        v_scroll.pack(side=tk.RIGHT, fill=tk.Y)
+        canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+
+        # Convert the image to a PhotoImage for use in Tkinter
+        photo_image = ImageTk.PhotoImage(pil_image)
+
+        # Add the image to the canvas
+        image_id = canvas.create_image(0, 0, anchor="nw", image=photo_image)
+        canvas.config(scrollregion=canvas.bbox(tk.ALL))
+
+        # Set up zooming and panning variables
+        scale = 1.0
+
+        def zoom(event):
+            """Zoom in or out with the mouse wheel."""
+            nonlocal scale
+            # Calculate new scale
+            if event.delta > 0:  # Zoom in
+                scale *= 1.1
+            elif event.delta < 0:  # Zoom out
+                scale /= 1.1
+
+            # Limit the scale to avoid excessive zoom
+            scale = max(0.1, min(scale, 10))
+
+            # Resize the image and update the canvas
+            new_width = int(pil_image.width * scale)
+            new_height = int(pil_image.height * scale)
+            resized_image = pil_image.resize((new_width, new_height), Image.Resampling.LANCZOS)
+            new_photo_image = ImageTk.PhotoImage(resized_image)
+            canvas.itemconfig(image_id, image=new_photo_image)
+            canvas.image = new_photo_image  # Keep a reference
+            canvas.config(scrollregion=canvas.bbox(tk.ALL))
+
+        def start_pan(event):
+            """Start panning the image."""
+            canvas.scan_mark(event.x, event.y)
+
+        def pan(event):
+            """Handle panning the image."""
+            canvas.scan_dragto(event.x, event.y, gain=1)
+
+        # Bind events for zooming and panning
+        canvas.bind("<MouseWheel>", zoom)
+        canvas.bind("<ButtonPress-1>", start_pan)
+        canvas.bind("<B1-Motion>", pan)
+
+        # Add display fields for values
+        input_frame = ttk.Frame(root)
+        input_frame.pack(side=tk.BOTTOM, fill=tk.X, padx=10, pady=10)
+
+        ttk.Label(input_frame, text="Bounding boxes:").pack(side=tk.LEFT, padx=5)
+        display1 = ttk.Entry(input_frame, width=10, state="readonly")
+        display1.pack(side=tk.LEFT, padx=5)
+
+        ttk.Label(input_frame, text="Circles:").pack(side=tk.LEFT, padx=5)
+        display2 = ttk.Entry(input_frame, width=10, state="readonly")
+        display2.pack(side=tk.LEFT, padx=5)
+
+        ttk.Label(input_frame, text="Value:").pack(side=tk.LEFT, padx=5)
+        display3 = ttk.Entry(input_frame, width=10, state="readonly")
+        display3.pack(side=tk.LEFT, padx=5)
+
+        ttk.Label(input_frame, text="Reclassified PP:").pack(side=tk.LEFT, padx=5)
+        display4 = ttk.Entry(input_frame, width=10, state="readonly")
+        display4.pack(side=tk.LEFT, padx=5)
+
+        # Set the values in the read-only fields
+        if nb_coins is not None:
+            display1.config(state="normal")
+            display1.insert(0, str(nb_coins))
+            display1.config(state="readonly")
+
+        if nb_circles is not None:
+            display2.config(state="normal")
+            display2.insert(0, str(nb_circles))
+            display2.config(state="readonly")
+
+        if value is not None:
+            display3.config(state="normal")
+            display3.insert(0, str(value))
+            display3.config(state="readonly")
+
+        if reclassified_pp is not None:
+            display4.config(state="normal")
+            display4.insert(0, str(reclassified_pp))
+            display4.config(state="readonly")
+
+        # Run the Tkinter main loop
+        root.mainloop()
+
+
+

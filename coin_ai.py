@@ -41,11 +41,25 @@ class YoloModel(YOLO):
             
 @dataclass           
 class CoinResults:
+    """
+    CoinResults is a class that encapsulates the results of coin detection and classification.
+    Attributes:
+        results (Results): The results object containing detection information.
+        nb_coins (int): The number of coins detected. Default is 0.
+        value (int): The total value of the detected coins. Default is 0.
+        circles (list[CircleInfo|None]): A list of CircleInfo objects or None, representing detected circles. 
+                                         The length must be equal to the length of results.boxes. Default is None.
+        detected_circles (int): The number of detected circles. Default is 0.
+        reclassification_pp (int): The reclassification post-processing value. Default is 0.
+    Methods:
+        __post_init__: Initializes the circles attribute to a list of None with the same length as results.boxes if circles is None.
+    """
     results:Results
     nb_coins:int=0
     value:int=0
     circles:list[CircleInfo|None]=None # length must be equal to results.boxs len
     detected_circles:int=0
+    reclassification_pp:int = 0
     
     def __post_init__(self):
         if self.circles is None:
@@ -54,7 +68,7 @@ class CoinResults:
             
 class CoinAi(YoloModel):
     
-    def get_pixel_to_mm_ratio(coin_results:CoinResults,indexs_dict:dict,ref_5baht)->float:
+    def __get_pixel_to_mm_ratio(coin_results:CoinResults,indexs_dict:dict,ref_5baht)->float:
         # ['10baht', '1baht', '2baht', '5baht'] in data.yaml
         def get_best_coin_radius(first_index:int,last_index:int):
             radius = None
@@ -86,12 +100,14 @@ class CoinAi(YoloModel):
     def process_image(self,path:str,circle_detection_improvment=True,conf=0.6,iou=0.45,agnostic_nms=True,inside_min_percentage_circle = 0.95,ref_5baht=True)->CoinResults:
         results = self.filter_results(self.predict(path,conf=conf,iou=iou,agnostic_nms=agnostic_nms),conf=conf)[0] # one image so only one results object in n_results
         coin_results = CoinResults(results,nb_coins=len(results.boxes))
-        print("coin detected: ",coin_results.nb_coins)
         if circle_detection_improvment:
-            coin_results = CoinAi.radius_scale_improvement(coin_results,inside_min_percentage_circle=inside_min_percentage_circle,ref_5baht=ref_5baht)
+            coin_results, n_changed_cls = CoinAi.__radius_scale_improvement(coin_results,inside_min_percentage_circle=inside_min_percentage_circle,ref_5baht=ref_5baht)
+            coin_results.reclassification_pp = n_changed_cls
+            coin_results = CoinAi.__get_number_detected_circles(coin_results)
+        coin_results = CoinAi.__get_total_value(coin_results)
         return coin_results
     
-    def get_results_img(self, coin_results, display_boxes = True, display_circles=False,display_conf=True,save=False,file_name="results.png",save_folder="outputs"):
+    def get_results_img(self, coin_results, display_boxes = True, display_circles=True,display_conf=False,save=False,file_name="results.png",save_folder="outputs"):
         if display_boxes : 
             img_result = super().get_results_img([coin_results.results],display_conf)[0]
         else:
@@ -106,7 +122,7 @@ class CoinAi(YoloModel):
             cv2.imwrite(f"{os.path.join(save_folder,file_name)}.jpg",img_result)
         return img_result
     
-    def radius_scale_improvement(coin_results,inside_min_percentage_circle,ref_5baht):
+    def __radius_scale_improvement(coin_results:CoinResults,inside_min_percentage_circle,ref_5baht)->tuple[CoinResults,int]:
         
         n_changed_cls = 0
         # relative_deviation 10baht vs 1baht coins : (26-20)/20 = 0.23 can be adjusted because we have mesurement in px and there is distortion
@@ -132,14 +148,14 @@ class CoinAi(YoloModel):
                 indexs_dict[c_class] = [i,i]
             else:
                 indexs_dict[c_class][1] = i
-        pixel_to_milimeter_ratio = CoinAi.get_pixel_to_mm_ratio(coin_results,indexs_dict,ref_5baht)
+        pixel_to_milimeter_ratio = CoinAi.__get_pixel_to_mm_ratio(coin_results,indexs_dict,ref_5baht)
         if not pixel_to_milimeter_ratio:
             s = "Couldn't improve Yolo results with radius scale :"
             if indexs_dict[0] == [-1,-1] and indexs_dict[3] == [-1,-1]:
                 print(s, "no reference coin detected (10baht|5baht if ref_5baht=True)")
             else:
                 print(s,"no circle detected in any reference coin (10baht|5baht if ref_5baht=True) bounding box")
-            return coin_results
+            return coin_results,0
         boxes = coin_results.results.boxes
         for i in range(indexs_dict[1][0],indexs_dict[1][1]+1):
             # radius 1 baht coin = 10mm 
@@ -162,4 +178,18 @@ class CoinAi(YoloModel):
             
         print("Labels changed by radius scale improvement: ",n_changed_cls)
                 
+        return coin_results, n_changed_cls
+    
+    def __get_number_detected_circles(coin_results:CoinResults):
+        coin_results.detected_circles = sum(1 for circle in coin_results.circles if circle)
+        return coin_results
+    
+    def __get_total_value(coin_results:CoinResults):
+        values = {
+           0:10,
+           1:1,
+           2:2,
+           3:5
+        }
+        coin_results.value = sum(values[int(bbox.cls.item())] for bbox in coin_results.results.boxes)
         return coin_results

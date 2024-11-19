@@ -26,7 +26,7 @@ class PathFinder:
         self.inflated_heuristic = {}  # Dynamically updated heuristic estimates
         
     def __invalid_coordinates(self):
-        return not (self.start[0] >= self.image_width or self.start[1] >= self.image_height or
+        return (self.start[0] >= self.image_width or self.start[1] >= self.image_height or
             self.end[0] >= self.image_width or self.end[1] >= self.image_height or
             self.start[0] < 0 or self.start[1] < 0 or self.end[0] < 0 or self.end[1] < 0)
             

@@ -60,6 +60,9 @@ class CirclesDetector:
         Returns:
             List of CircleInfo objects containing detected circles information. None instead of CircleInfo if no circle detected.
         """
+        
+        # TODO: Improve "circle" detection by accepting a deformation ratio to take oval shaped into account.
+        
         image = cv2.imread(results.path)
         
         if image is None:
