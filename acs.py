@@ -29,10 +29,15 @@ class Acs(): # Anti Collision System
         results_img = self.coin_ai.get_results_img(coin_results=coin_results)
         
         
-        cv2.circle(results_img, start, 5, (0, 255, 0), -1) # Draw the start point in green
-        cv2.circle(results_img, end, 5, (0, 0, 255), -1) # Draw the end point in red
-        for (x, y) in path:
+        cv2.circle(results_img, start, 5, (255, 0, 0), -1)
+        cv2.circle(results_img, end, 5, (0, 0, 255), -1)
+        
+        for i, (x, y) in enumerate(path):
             cv2.circle(results_img, (x, y), 2, (0, 255, 0), -1)
+            
+            if i > 0:
+                prev_x, prev_y = path[i - 1]
+                cv2.line(results_img, (prev_x, prev_y), (x, y), (0, 255, 0), 2)
 
         text = f"Value: {coin_results.value}; Coins: {coin_results.nb_coins}; Circles: {coin_results.detected_circles} ; Reclassified: {coin_results.reclassification_pp}"
         font = cv2.FONT_HERSHEY_SIMPLEX
