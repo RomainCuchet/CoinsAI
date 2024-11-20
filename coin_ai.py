@@ -91,9 +91,19 @@ class CoinAi(YoloModel):
             if radius:
                 return 13 / radius
         if ref_5baht and indexs_dict[3] != [-1,-1]: # 5baht reference coin (if activated)
+            baht5_radius = None
             for i in range(indexs_dict[3][1],indexs_dict[3][0]-1,-1):
                 if coin_results.circles[i]:
-                    return 12 / coin_results.circles[i].radius
+                    px_to_mm_ratio =  12 / coin_results.circles[i].radius
+                    baht5_radius = coin_results.circles[i].radius
+                    break
+            if baht5_radius:
+                for i in range(indexs_dict[1][0],indexs_dict[1][1]+1):
+                    if coin_results.circles[i]:
+                        if (baht5_radius-coin_results.circles[i].radius)/baht5_radius > 0.12: # 12% deviation from 5baht coin (12-10)/12 = 0.16 - 0.04 for margin of error
+                            return px_to_mm_ratio
+                        else:
+                            return None
         return None
         
     
