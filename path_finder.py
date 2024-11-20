@@ -6,7 +6,8 @@ from ultralytics.engine.results import Results
 class PathFinder:
     def __init__(self, results: Results, start, end, object_width=1):
         """
-        Initialize the A* Search Algorithm with pixel-level data.
+        Initialize the A* Search Algorithm with pixel-level data. Provide functions to find a path from start to end avoiding obstacles.
+        Obstacles are detected bounding boxes from the Ultralytics Results object.
 
         :param results: Ultralytics Results object containing detected bounding boxes.
         :param start: Start coordinates (x, y) in pixels.

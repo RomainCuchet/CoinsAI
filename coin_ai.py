@@ -17,7 +17,15 @@ from typing import Tuple
 from circles_detector import CirclesDetector,CircleInfo
 
 class YoloModel(YOLO):
-        
+    """
+    YoloModel is a subclass of YOLO that provides additional methods for filtering and processing detection results.
+    Methods
+    -------
+    filter_results(n_results: list[Results], conf: float = 0.6) -> list[Results]
+        Filters the detection results based on a confidence threshold.
+    get_results_img(n_results: list[Results], display_conf: bool = True) -> list
+        Generates images with detection results, optionally displaying confidence scores.
+    """
     def __filter_by_confidence(self,results:Results,conf:float):
         results.boxes = [box for box in results.boxes if box.conf >= conf]
         return results
@@ -74,7 +82,7 @@ class CoinAi(YoloModel):
             radius = None
             left = (first_index+last_index)//2
             right = left+1
-            while right<last_index:
+            while right<=last_index:
                 if coin_results.circles[left]:
                     return coin_results.circles[left].radius
                 if coin_results.circles[right]:
@@ -101,9 +109,11 @@ class CoinAi(YoloModel):
                 for i in range(indexs_dict[1][0],indexs_dict[1][1]+1):
                     if coin_results.circles[i]:
                         if (baht5_radius-coin_results.circles[i].radius)/baht5_radius > 0.12: # 12% deviation from 5baht coin (12-10)/12 = 0.16 - 0.04 for margin of error
+                            print("It is likely that the biggest circle detected in a 5baht coin is a 1baht coin. No change will be made.")
                             return px_to_mm_ratio
                         else:
                             return None
+                return px_to_mm_ratio
         return None
         
     

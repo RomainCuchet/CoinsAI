@@ -1,6 +1,6 @@
 from coin_ai import CoinAi
 import cv2
-from path_finding import PathFinder
+from path_finder import PathFinder
 from coin_ai import CoinAi, CoinResults
 
 class Acs(): # Anti Collision System

@@ -6,7 +6,30 @@ from torchvision import transforms
 import numpy as np
 import yaml
 
-class Yolov8_obb():
+class Yolov8_dataset():
+    """
+    A class to manage YOLOv8 object detection dataset.
+    Attributes:
+    -----------
+    folder_path : str
+        Path to the dataset folder.
+    categories : list
+        List of dataset categories (e.g., ["train", "valid", "test"]).
+    labels : list
+        List of class labels from the dataset.
+    Methods:
+    --------
+    __init__(folder):
+        Initializes the Yolov8_dataset object with the dataset folder path and loads class labels from 'data.yaml'.
+    __str__():
+        Returns a string representation of the Yolov8_datatset object, including folder path, image count, and class labels.
+    count_images():
+        Counts the number of images in each category and returns a list of image counts.
+    count_bbox():
+        Counts the number of bounding boxes in each category and returns a list of bounding box counts.
+    delete_labels_missing_images():
+        Deletes label files that do not have corresponding image files in each category and prints the number of deleted labels.
+    """
     def __init__(self, folder):
         self.folder_path = folder
         self.categories = ["train","valid","test"]
