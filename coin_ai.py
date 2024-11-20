@@ -152,7 +152,6 @@ class CoinAi(YoloModel):
         for i in range(coin_results.nb_coins):
             if coin_results.circles[i] is not None:
                 coin_results.detected_circles += 1
-        print("detected circles: ",coin_results.detected_circles)
         if len(coin_results.circles)!=len(coin_results.results.boxes):
             raise Exception(f"len(coin_results.circles) = {len(coin_results.circles)}  != len(coin_results.results) = {len(coin_results.results.boxes)} ")
         
@@ -161,7 +160,7 @@ class CoinAi(YoloModel):
             1:[-1,-1],
             2:[-1,-1],
             3:[-1,-1]
-        }        
+        }     
         for i in range(coin_results.nb_coins):
             c_class = int(coin_results.results.boxes[i].cls.item())
             if indexs_dict[c_class][0] == -1:
@@ -177,16 +176,17 @@ class CoinAi(YoloModel):
                 print(s,"no circle detected in any reference coin (10baht|5baht if ref_5baht=True) bounding box")
             return coin_results,0
         boxes = coin_results.results.boxes
-        for i in range(indexs_dict[1][0],indexs_dict[1][1]+1):
-            # radius 1 baht coin = 10mm 
-            if coin_results.circles[i] is not None and coin_results.circles[i].radius*pixel_to_milimeter_ratio > 10+delta_mm:
-                # Clone the data tensor to make modifications
-                box_data = boxes[i].data.clone()
-                # Modify the class label in the cloned tensor
-                box_data[0, 5] = torch.tensor(3)
-                boxes[i].data = box_data  # Update the data in the boxes list
-                n_changed_cls += 1
-        if ref_5baht:
+        if indexs_dict[1] != [-1,-1]:
+            for i in range(indexs_dict[1][0],indexs_dict[1][1]+1):
+                # radius 1 baht coin = 10mm 
+                if coin_results.circles[i] is not None and coin_results.circles[i].radius*pixel_to_milimeter_ratio > 10+delta_mm:
+                    # Clone the data tensor to make modifications
+                    box_data = boxes[i].data.clone()
+                    # Modify the class label in the cloned tensor
+                    box_data[0, 5] = torch.tensor(3)
+                    boxes[i].data = box_data  # Update the data in the boxes list
+                    n_changed_cls += 1
+        if ref_5baht and indexs_dict[3] != [-1,-1]:
             for i in range(indexs_dict[3][0],indexs_dict[3][1]+1):
                 if coin_results.circles[i] is not None and coin_results.circles[i].radius*pixel_to_milimeter_ratio < 10+delta_mm:
                     box_data = boxes[i].data.clone()
