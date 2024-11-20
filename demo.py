@@ -3,11 +3,14 @@ from tools import Tools
 import tkinter as tk
 from tkinter import filedialog
 from tkinter import Label
+from PIL import Image
 
 cam_acs = Acs("models/yolov8s_coinai.pt")
 
 def process_image(image_path):
-    img_path = cam_acs.get_prediction(image_path, (0, 0), (1199, 1599), robot_width=1)[0]
+    with Image.open(img_path) as img:
+        width, height = img.size
+    img_path = cam_acs.get_prediction(image_path, (0, 0), (width-1, height-1), robot_width=1)[0]
     Tools.show_img(img_path=img_path)
 
 def open_file():
