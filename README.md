@@ -2,7 +2,7 @@
 
 > This document provides a brief summary of the content in `report.ipynb`. For detailed explanations, please refer to the original report.
 
-![](https://imgur.com/JIJb0pu)
+![final results](https://imgur.com/JIJb0pu.png)
 
 For robots to navigate effectively in a warehouse while avoiding obstacles, they are typically equipped with expensive sensors such as LiDARs. My goal is to develop a low-cost alternative system using only a camera and a processing unit. The system will use the
 
@@ -12,7 +12,7 @@ Training a YOLO model requires a large dataset. However, I was unable to find an
 
 ## Baht Coins Classification Using Computer Vision Techniques
 
-![](https://https://imgur.com/kpX5DAs)
+![baht coins classification](https://imgur.com/kpX5DAs.png)
 
 | Model   | Size (pixels) | mAPval50-95 | Speed CPU ONNX (ms) | Speed A100 TensorRT (ms) | Params (M) | FLOPs (B) |
 |---------|---------------|-------------|----------------------|--------------------------|------------|-----------|
