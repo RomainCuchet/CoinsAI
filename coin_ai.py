@@ -117,10 +117,10 @@ class CoinAi(YoloModel):
         return None
         
     
-    def process_image(self,path:str,circle_detection_improvment=True,conf=0.6,iou=0.45,agnostic_nms=True,inside_min_percentage_circle = 0.95,ref_5baht=True)->CoinResults:
+    def process_image(self,path:str,circle_detection_improvement=True,conf=0.6,iou=0.45,agnostic_nms=True,inside_min_percentage_circle = 0.95,ref_5baht=True)->CoinResults:
         results = self.filter_results(self.predict(path,conf=conf,iou=iou,agnostic_nms=agnostic_nms),conf=conf)[0] # one image so only one results object in n_results
         coin_results = CoinResults(results,nb_coins=len(results.boxes))
-        if circle_detection_improvment:
+        if circle_detection_improvement:
             coin_results, n_changed_cls = CoinAi.__radius_scale_improvement(coin_results,inside_min_percentage_circle=inside_min_percentage_circle,ref_5baht=ref_5baht)
             coin_results.reclassification_pp = n_changed_cls
             coin_results = CoinAi.__get_number_detected_circles(coin_results)

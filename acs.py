@@ -8,7 +8,7 @@ class Acs(): # Anti Collision System
        self.coin_ai = CoinAi(model_path)
        self.img_saving_path = img_saving_path
        
-    def get_prediction(self,image_path,start : tuple,end : tuple,robot_width=1,img_saving_path=None):
+    def get_prediction(self,image_path,start : tuple,end : tuple,robot_width=1,img_saving_path=None,circle_detection_improvement=True, conf = 0.6, iou = 0.45):
         """
         Processes an image to detect coins, finds a path between two points, and saves the result image with the path.
         Args:
@@ -23,7 +23,7 @@ class Acs(): # Anti Collision System
                 - value (float): The total value of the detected coins.
                 - reclassification_pp (float): The number of bbox reclassified by post-processing.
         """
-        coin_results : CoinResults = self.coin_ai.process_image(image_path)
+        coin_results : CoinResults = self.coin_ai.process_image(image_path,circle_detection_improvement=circle_detection_improvement,iou = iou, conf = conf)
         path_finder = PathFinder(coin_results.results, start, end,robot_width)
         path = path_finder.get_path()
         results_img = self.coin_ai.get_results_img(coin_results=coin_results)
@@ -35,8 +35,8 @@ class Acs(): # Anti Collision System
                 prev_x, prev_y = path[i - 1]
                 cv2.line(results_img, (prev_x, prev_y), (x, y), (0, 255, 0), 2)
                 
-        cv2.circle(results_img, start, 5, (255, 0, 0), -1)
-        cv2.circle(results_img, end, 5, (0, 0, 255), -1)
+        cv2.circle(results_img, start, 15, (255, 0, 0), -1)
+        cv2.circle(results_img, end, 15, (0, 0, 255), -1)
 
         text = f"Value: {coin_results.value}; Coins: {coin_results.nb_coins}; Circles: {coin_results.detected_circles} ; Reclassified: {coin_results.reclassification_pp}"
         font = cv2.FONT_HERSHEY_SIMPLEX
