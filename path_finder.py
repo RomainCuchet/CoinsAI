@@ -8,7 +8,7 @@ class PathFinder:
         self.results = results
         self.start = start
         self.end = end
-        self.object_width = object_width
+        self.object_width = int(object_width)
         self.image_height = results.orig_img.shape[0]
         self.image_width = results.orig_img.shape[1]
         
@@ -23,6 +23,8 @@ class PathFinder:
         for bbox in self.results.boxes:
             x1, y1, x2, y2 = map(int, bbox.xyxy.tolist()[0])
             self.grid[y1:y2, x1:x2] = 1
+
+        self.grid = np.pad(self.grid, int(self.object_width / 2), mode='constant', constant_values=1)
 
     def __inflate_obstacles(self):
         """Inflate obstacles by the object width."""
@@ -182,4 +184,4 @@ class PathFinder:
                     f_score[successor] = tentative_g + self.__distance(successor, self.end)
                     heappush(open_set, (f_score[successor], successor))
         
-        return []  # No path found
+        return []

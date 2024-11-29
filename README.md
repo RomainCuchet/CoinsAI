@@ -38,12 +38,15 @@ We use agnostic NMS (Non Maximum Suppression) to prevent a single coin to be cla
 
 JumpPointSearch (JPS) is an optimization of A* for grid-based pathfinding. JPS enhances performance by skipping nodes that do not contribute to a better path. In grid-based maps, JPS 'jumps' over multiple nodes at once, reducing redundant calculations and minimizing the number of nodes evaluated.
 
+Our `PathFinder` class considers the dimensions of the moving object to calculate a minimum path while avoiding collisions with detected obstacles and borders.
+
+![1 vs 40px path finding](https://imgur.com/5eoiFC4.png)
+
+This is a comparison of the paths calculated for a robot with a size of 1 pixel and another with a size of 40 pixels.
+
+
 Here are some sources for a deeper explanation :
 
 - This website offers a clear explanation and visual explanation of JPS : https://zerowidth.com/2013/a-visual-explanation-of-jump-point-search/
 
 - The original research paper by Daniel Harabor and Alban Grastien : https://users.cecs.anu.edu.au/~dharabor/data/papers/harabor-grastien-aaai11.pdf
-
-  
-The `PathFinder` class is implemented using JPS.
-
