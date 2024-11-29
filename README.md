@@ -22,17 +22,17 @@ Training a YOLO model requires a large dataset. However, I was unable to find an
 | YOLOv8l | 640           | 52.9        | 375.2                | 2.3                      | 43.7       | 165.2     |
 | YOLOv8x | 640           | 53.9        | 479.1                | 3.5                      | 68.3       | 275.8     |
 
-We chose to use YOLOv8s as our computational ressources were limited. Refer to the report.ipynb to see the training process and the model's performances. 
+We chose to use YOLOv8s as our computational resources were limited. Refer to the report.ipynb to see the training process and the model's performances. 
 
 ### Post-Processing
 
-The model is not inherently designed to measure size directly. Since objects are detected in pixels, converting pixel dimensions to millimeters requires a reference scale within the image. While humans can infer object sizes through contextual comparisons—such as recognizing that a 5-baht coin is larger than a 1- or 2-baht coin—the model can't achieve such reasoning. To address this limitation, we developed the `radius_scale_improvement()` function. This function applies a radius-based correction to enhance the classification of 5- and 1-baht coins, improving overall accuracy. This method involves : 
+The model is not inherently designed to measure size directly. Since objects are detected in pixels, converting pixel dimensions to millimeters requires a reference scale within the image. While humans can infer object sizes through contextual comparisons—such as recognizing that a 5-baht coin is larger than a 1- or 2-baht coin, the model can't achieve such reasoning. To address this limitation, we developed the `radius_scale_improvement()` function. This function applies a radius-based correction to enhance the classification of 5- and 1-baht coins, improving overall accuracy. This method involves: 
 
  - Circle Detection
  - Pixel-to-Millimeter Scale
  -  Radius-Based Reclassification
 
-We use agnostic NMS (Non Maximum Suppression) to prevent a single coin to be classified twice as two different classes.  
+We use agnostic NMS (Non Maximum Suppression) to prevent a single coin from being classified twice as two different classes.  
 
 ## Pathfinding using JPS
 
@@ -44,9 +44,8 @@ Our `PathFinder` class considers the dimensions of the moving object to calculat
 
 This is a comparison of the paths calculated for a robot with a size of 1 pixel and another with a size of 40 pixels.
 
+Here are some sources for a deeper explanation:
 
-Here are some sources for a deeper explanation :
+- This website offers a clear explanation and visual explanation of JPS: https://zerowidth.com/2013/a-visual-explanation-of-jump-point-search/
 
-- This website offers a clear explanation and visual explanation of JPS : https://zerowidth.com/2013/a-visual-explanation-of-jump-point-search/
-
-- The original research paper by Daniel Harabor and Alban Grastien : https://users.cecs.anu.edu.au/~dharabor/data/papers/harabor-grastien-aaai11.pdf
+- The original research paper by Daniel Harabor and Alban Grastien: https://users.cecs.anu.edu.au/~dharabor/data/papers/harabor-grastien-aaai11.pdf
