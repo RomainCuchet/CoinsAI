@@ -367,6 +367,3 @@ class Tools():
         
     def show_img(img_path):
         os.startfile(img_path)
-
-
-

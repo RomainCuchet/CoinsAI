@@ -71,5 +71,3 @@ class Yolov8_dataset():
                     os.remove(os.path.join(self.folder_path, category, "labels", filename))
                     n+=1
         print("successfully deleted",n,"labels")
-    
-    
