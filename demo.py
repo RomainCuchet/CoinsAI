@@ -11,8 +11,9 @@ def process_image(img_path):
     with Image.open(img_path) as img:
         width, height = img.size
     img_path = cam_acs.get_prediction(
-        img_path, (0, 0),
-        (width-1, height-1),
+        img_path,
+        (int(robot_width.get()/2), int(robot_width.get()/2)),
+        (int(width-1-robot_width.get()/2), int(height-1-robot_width.get()/2)),
         robot_width=robot_width.get(),
         circle_detection_improvement=circle_detection_improvement.get(),
         conf=conf_scale.get(),

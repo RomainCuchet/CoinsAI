@@ -35,6 +35,23 @@ class Acs(): # Anti Collision System
                 prev_x, prev_y = path[i - 1]
                 cv2.line(results_img, (prev_x, prev_y), (x, y), (0, 255, 0), 2)
                 
+                if robot_width > 1:
+                    offset = int(robot_width / 2)
+                    dx, dy = x - prev_x, y - prev_y
+                    length = (dx**2 + dy**2)**0.5
+                    offset_x = int(offset * dy / length)
+                    offset_y = int(offset * dx / length)
+                    cv2.line(results_img, (prev_x - offset_x, prev_y + offset_y), (x - offset_x, y + offset_y), (0, 0, 255), 2)
+                    cv2.line(results_img, (prev_x + offset_x, prev_y - offset_y), (x + offset_x, y - offset_y), (0, 0, 255), 2)
+                    if i < len(path) - 1:
+                        next_x, next_y = path[i + 1]
+                        dx_next, dy_next = next_x - x, next_y - y
+                        length_next = (dx_next**2 + dy_next**2)**0.5
+                        offset_x_next = int(offset * dy_next / length_next)
+                        offset_y_next = int(offset * dx_next / length_next)
+                        cv2.line(results_img, (x - offset_x, y + offset_y), (x - offset_x_next, y + offset_y_next), (0, 0, 255), 2)
+                        cv2.line(results_img, (x + offset_x, y - offset_y), (x + offset_x_next, y - offset_y_next), (0, 0, 255), 2)
+                
         cv2.circle(results_img, start, 15, (255, 0, 0), -1)
         cv2.circle(results_img, end, 15, (0, 0, 255), -1)
 
