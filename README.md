@@ -4,9 +4,7 @@
 
 ![final results](https://imgur.com/JIJb0pu.png)
 
-For robots to navigate effectively in a warehouse while avoiding obstacles, they are typically equipped with expensive sensors such as LiDARs. My goal is to develop a low-cost alternative system using only a camera and a processing unit. The system will use the
-
- camera to detect obstacles with a fine-tuned YOLOv8s model. An anti-collision system will then calculate and update the robot's trajectory in real-time using an implementation of the JumpPoint Search.
+For robots to navigate effectively in a warehouse while avoiding obstacles, they are typically equipped with expensive sensors such as Lidar’s. My goal is to develop a low-cost alternative system using only a camera and a processing unit. The system will use the camera to detect obstacles with a fine-tuned YOLOv8s model. An anti-collision system will then calculate and update the robot's trajectory in real-time using an implementation of the JumpPoint Search.
  
 Training a YOLO model requires a large dataset. However, I was unable to find an adequate dataset of industrial obstacles captured from a bird's-eye view, nor was it feasible to create my own dataset for testing various configurations and post-processing methods. To address this, I decided to use coins as a substitute for obstacles due to their ease of arrangement in different configurations. While the primary objective was to detect objects, I extended its scope to include obstacle classification. Coin classification, as we will explore in the following sections, is an intriguing problem in its own.
 
@@ -30,9 +28,9 @@ The model is not inherently designed to measure size directly. Since objects are
 
  - Circle Detection
  - Pixel-to-Millimeter Scale
- -  Radius-Based Reclassification
+ - Radius-Based Reclassification
 
-We use agnostic NMS (Non Maximum Suppression) to prevent a single coin from being classified twice as two different classes.  
+We use agnostic NMS (Non-Maximum Suppression) to prevent a single coin from being classified twice as two different classes.  
 
 ## Pathfinding using JPS
 
